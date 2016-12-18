@@ -43,30 +43,37 @@ namespace requestloggr.sample
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
-            loggerFactory.AddProvider(new RequestLoggrProvider());
-            loggerFactory.UseRequestLoggr();
+            //loggerFactory.UseRequestLoggr(app);
 
-            //app.UseRequestLoggr();
             app.UseMvc();
-
-            
+            app.UseRequestLoggr();
         }
     }
 
     public static class RequestLoggrLoggerFactory
     {
-        public static ILoggerFactory UseRequestLoggr(this ILoggerFactory loggerFactory)
+        public static ILoggerFactory UseRequestLoggr(this ILoggerFactory loggerFactory, IApplicationBuilder app)
         {
+            app.UseRequestLoggr();
             loggerFactory.AddProvider(new RequestLoggrProvider());
 
             return loggerFactory;
         }
+    }
 
+    public static class RequestLogger
+    {
+        public static IApplicationBuilder UseRequestLoggr(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<RequestLoggerMiddlewareDelegate>();
+        }
     }
 
     public class RequestLoggrLogger : ILogger, IDisposable
     {
         private bool[] _enabledLogLevels;
+
+
         public RequestLoggrLogger()
         {
             _enabledLogLevels = new bool[Enum.GetNames(typeof(LogLevel)).Length];
@@ -87,7 +94,9 @@ namespace requestloggr.sample
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            Debug.WriteLine("Dette kommer fra awesomeness!!");
+            var kuk = formatter.Invoke(state, exception);
+
+            Debug.WriteLine("Anderslogger: " + kuk);
         }
 
         public void Dispose()
@@ -111,17 +120,15 @@ namespace requestloggr.sample
         {
             return new RequestLoggrLogger();
         }
-
-
     }
 
     public class RequestLoggerMiddlewareDelegate
     {
         private readonly RequestDelegate _next;
 
-        private readonly ILogger _logger;
+        private readonly ILogger<RequestLoggerMiddlewareDelegate> _logger;
 
-        public RequestLoggerMiddlewareDelegate(RequestDelegate next, ILogger logger)
+        public RequestLoggerMiddlewareDelegate(RequestDelegate next, ILogger<RequestLoggerMiddlewareDelegate> logger)
         {
             _next = next;
             _logger = logger;
@@ -129,21 +136,19 @@ namespace requestloggr.sample
 
         public async Task Invoke(HttpContext context)
         {
-            
-            Debug.WriteLine("Before the execution!");
+
+            _logger.LogInformation("Before the execution!");
+            var before = new Stopwatch();
             await _next.Invoke(context);
-            Debug.WriteLine("After the execution!");
+            var elapsed = before.ElapsedMilliseconds;
+            before.Stop();
 
-            Debug.WriteLine("Statuscode: " + context.Response.StatusCode);
-            Debug.WriteLine("Executiontime: " + context.Response.StatusCode);
+            _logger.LogInformation("After the execution!");
+
+            _logger.LogInformation("Statuscode: " + context.Response.StatusCode);
+            _logger.LogInformation("Executiontime: " + elapsed);
         }
     }
 
-    public static class RequestLogger
-    {
-        public static IApplicationBuilder UseRequestLoggr(this IApplicationBuilder builder)
-        {
-            return builder.UseMiddleware<RequestLoggerMiddlewareDelegate>();
-        }
-    }
+
 }

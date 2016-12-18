@@ -10,8 +10,9 @@ namespace requestloggr.sample.Controllers
     [Route("api/[controller]")]
     public class ValuesController : Controller
     {
-        private ILogger _logger;
-        public ValuesController(ILogger logger)
+        private readonly ILogger<ValuesController> _logger;
+
+        public ValuesController(ILogger<ValuesController> logger)
         {
             _logger = logger;
         }
