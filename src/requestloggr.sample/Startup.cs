@@ -45,8 +45,9 @@ namespace requestloggr.sample
             loggerFactory.AddDebug();
             //loggerFactory.UseRequestLoggr(app);
 
-            app.UseMvc();
             app.UseRequestLoggr();
+
+            app.UseMvc();
         }
     }
 
@@ -139,9 +140,11 @@ namespace requestloggr.sample
 
             _logger.LogInformation("Before the execution!");
             var before = new Stopwatch();
+            before.Start();
             await _next.Invoke(context);
-            var elapsed = before.ElapsedMilliseconds;
             before.Stop();
+
+            var elapsed = before.ElapsedMilliseconds;
 
             _logger.LogInformation("After the execution!");
 

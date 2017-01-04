@@ -1,6 +1,0 @@
-﻿{
-  "dependencies": {
-    "Serilog": "2.3.0",
-    "Serilog.Sinks.Literate": "2.1.0"
-  }
-}
